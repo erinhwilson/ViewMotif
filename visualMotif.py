@@ -123,6 +123,20 @@ color = dict()
 # list to store all the gene names
 allgenes = []
 
+def removeComments(inputFileName, outputFileName):
+
+    input = open(inputFileName, "r")
+    output = open(outputFileName, "w")
+
+    output.write(input.readline())
+
+    for line in input:
+        if not line.lstrip().startswith("#") or line.lstrip()=="":
+            output.write(line)
+
+    input.close()
+    output.close()
+
 def createDictionary(mydict,motifs,sequence,allgenes):
     """
     assigns default values to the dictionary passed so that you populate the dictionary with right values
@@ -130,7 +144,8 @@ def createDictionary(mydict,motifs,sequence,allgenes):
     structure :  each sequence has 'm' motifs in them. Each motif 'm' has a start and stop index.
     """
     for s in sequence:
-        seq = s.split("|",1)[0]
+        #print(s)
+        seq = s#.split("|",1)[0]
         allgenes.append(seq)
         mydict[seq] = {}
         for m in motifs:
@@ -149,7 +164,7 @@ def createSequenceDictionary():
     outfile = open("./temp.fasta","w")
     for line in openfile:
         if(re.search(">",line)):
-            ln = line.split("|",1)[0]
+            ln = line#.split("|",1)[0]
             genes.append(ln.split('>',1)[1])
             outfile.write(ln+"\n")
         else:
@@ -160,7 +175,7 @@ def createSequenceDictionary():
         # dictionary that stores the genenames and corresponding promoter sequences.
         seqdict = SeqIO.to_dict(SeqIO.parse("./temp.fasta","fasta"))
     except ValueError as ve:
-        print "The fasta file contains duplicate genenames\n" + str(ve)
+        print("The fasta file contains duplicate genenames\n" + str(ve))
         exit()
 
     os.remove("./temp.fasta")   # deleting the file once we have the dictionary
@@ -178,13 +193,20 @@ def processFimo(stm,spm,m,s,ran,allgenes):
     """
 
     # reading the fimo.txt file
-    f = pd.read_csv(sys.argv[2],delimiter="\t")
+    fimo_input = sys.argv[2]
+    fimo_input_clean = f"{fimo_input.split('.')[0]}_clean.tsv"
+    removeComments(fimo_input, fimo_input_clean)
+    
+    f = pd.read_csv(fimo_input_clean,delimiter="\t")
 
     # to hold all the unique motif names and sequence names
-    m = set(f["#pattern name"])
-    s = set(f["sequence name"])
+    # m = set(f["#pattern name"])
+    # s = set(f["sequence name"])
+    m = set(f["motif_id"])
+    s = set(f["sequence_name"])
 
     # populating the respective dictionaries
+
     createDictionary(stm,m,s,allgenes)
     createDictionary(spm,m,s,allgenes)
     createDictionary(ran,m,s,allgenes)
@@ -202,7 +224,8 @@ def assignColors(motifs,hexcodes,fimo):
     color = {}
     count = 0
     legend = ""
-    for l in set(fimo["#pattern name"]):
+    #for l in set(fimo["#pattern name"]):
+    for l in set(fimo["motif_id"]):
         color[l] = hexcodes[count]
         count = count+1
         legend = legend + '<div><div  style=\"height:10px;width:10px;background-color:'+color[l]+'\"></div>' +'<p>'+ str(l)+'</p></br></div>'
@@ -216,8 +239,10 @@ def populateDictionary(startmain,stopmain,fimo,ranges):
     """
 
     for i in range(0,len(fimo)):
-        sname = fimo["sequence name"][i].split("|",1)[0]
-        motif = fimo["#pattern name"][i]
+        # sname = fimo["sequence name"][i].split("|",1)[0]
+        # motif = fimo["#pattern name"][i]
+        sname = fimo["sequence_name"][i]#.split("|",1)[0]
+        motif = fimo["motif_id"][i]
         start = fimo["start"][i]
         stop = fimo["stop"][i]
         # print "{},{}".format(sname,motif)
@@ -245,12 +270,12 @@ def lookUp(position,gene):
 
     return count,m
 
-def createHTML(head,legend,promoter,tail):
+def createHTML(head,legend,promoter,tail,outfile):
     """
     Function to create the FINAL HTML.
     """
     # adding the header to the html file.
-    htmlfile = open("./VisualMotif.html",'wb')
+    htmlfile = open(outfile,'w')
     htmlfile.write(head+"\n")
     htmlfile.write(legend+"\n")
     htmlfile.write("<div class =\"maindiv\">")
@@ -299,7 +324,6 @@ promoter = createSequenceDictionary()
 # # printing the promoter sequence using the genenames
 # print promoter["Mir3572"].seq[1:20]
 # # print promoter["AT2G18470"].seq[1:20]
-
 [motifs,sequence,fimo,allgenes] = processFimo(startmain,stopmain,motifs,sequence,ranges,allgenes)
 
 # DEBUG : To check the structure is properly created.
@@ -325,4 +349,8 @@ populateDictionary(startmain,stopmain,fimo,ranges)
 #     if(1385 in range(12,1388)):
 #         print "\n\nyes"
 
-createHTML(head,legend,promoter,tail)
+outfile = sys.argv[3]
+print("Writing output to:")
+print(outfile)
+print()
+createHTML(head,legend,promoter,tail,outfile)
