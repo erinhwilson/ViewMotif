@@ -3,9 +3,9 @@ A python script to visualize DNA sequence motifs within your promoter sequences.
 
 # Usage
 
-python visualmotif.py  [path to promoter sequences in fasta format] [ path to fimo.txt file] 
+`python visualmotif.py  [path to promoter sequences in fasta format] [ path to fimo.txt file] [ path to html output ]`
 
-example : python visualMotif.py promoters.fasta sample_fimo.txt 
+example : `python visualMotif.py promoters.fasta sample_fimo.txt output_file.html`
 
 
 # Dependencies
